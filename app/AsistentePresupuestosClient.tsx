@@ -77,14 +77,18 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
   if (!isAuthorized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
-        <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.45)] backdrop-blur-sm sm:p-8">
-          <p className="text-[11px] font-mono uppercase tracking-[0.4em] text-white/50">acceso privado</p>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-white sm:text-3xl">Ingresa tu PIN</h1>
-          <form onSubmit={handleLogin} className="mt-8 space-y-4">
+        <div className="w-full max-w-xs rounded-[1.75rem] border border-white/10 bg-white/5 p-5 shadow-[0_20px_60px_-30px_rgba(255,255,255,0.25)] backdrop-blur-sm">
+          <div className="flex items-center justify-between gap-3">
+            <span className="inline-block h-1 w-12 rounded-full bg-white/70" />
+            <p className="text-[10px] font-mono uppercase tracking-[0.45em] text-white/50">acceso</p>
+          </div>
+          <h1 className="mt-4 text-xl font-semibold tracking-tight text-white">Ingresa tu PIN</h1>
+          <p className="mt-2 text-xs leading-5 text-white/60">Se requiere para entrar al asistente privado.</p>
+          <form onSubmit={handleLogin} className="mt-6 space-y-4">
             <input
               type="password"
               maxLength={4}
-              className="w-full rounded-3xl border border-white/10 bg-white/5 px-4 py-4 text-center text-xl text-white outline-none transition focus:border-white/40"
+              className="w-full rounded-[1.5rem] border border-white/10 bg-black/20 px-4 py-3 text-center text-lg text-white outline-none transition focus:border-white/40"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
               placeholder="PIN"
@@ -92,7 +96,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
             />
             <button
               type="submit"
-              className="w-full rounded-3xl bg-white px-4 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-white/90"
+              className="w-full rounded-[1.5rem] bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-white/90"
             >
               Entrar
             </button>
@@ -150,7 +154,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
             </button>
           </form>
           <p className="mt-3 text-center text-[11px] uppercase tracking-[0.2em] text-white/40">
-            Optimizado para móvil • Estilo Claude Code
+            made by AOCO
           </p>
         </footer>
       </div>
