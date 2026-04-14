@@ -26,10 +26,10 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
 
   const handleLogin = (e: FormEvent) => {
     e.preventDefault();
-    if (pin === pinCorrecto) {
+    if (pin === pinCorrecto && pinCorrecto) {
       setIsAuthorized(true);
     } else {
-      alert('PIN Incorrecto');
+      alert(pinCorrecto ? 'PIN Incorrecto' : 'PIN no configurado');
       setPin('');
     }
   };
@@ -59,6 +59,20 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
     setMessages((prev) => [...prev, userMessage, assistantMessage]);
     setInput('');
   };
+
+  if (!pinCorrecto) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
+        <div className="w-full max-w-sm rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.45)] backdrop-blur-sm">
+          <p className="text-xs font-mono uppercase tracking-[0.4em] text-white/50">configuracion faltante</p>
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-white">PIN no configurado</h1>
+          <p className="mt-4 text-sm leading-6 text-white/70">
+            Agrega <code className="rounded bg-white/10 px-1 py-0.5 text-xs text-white">PIN_CORRECTO</code> a tu archivo <code className="rounded bg-white/10 px-1 py-0.5 text-xs text-white">.env.local</code> y vuelve a ejecutar el build.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthorized) {
     return (
