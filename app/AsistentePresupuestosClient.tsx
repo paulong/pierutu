@@ -231,18 +231,18 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto pr-0">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden pr-0">
           <div className="space-y-2.5 pb-4">
             {messages.map((message) => (
               <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div
-                  className={`max-w-[90%] rounded-[1.75rem] border px-3 py-2.5 text-xs leading-5 ${
+                  className={`max-w-[90%] rounded-[1.75rem] border px-3 py-2.5 text-xs leading-5 break-words overflow-hidden ${
                     message.role === 'user'
                       ? 'border-white/10 bg-white text-black rounded-br-none'
                       : 'border-white/10 bg-white/5 text-white rounded-bl-none'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap font-mono">{message.content}</p>
+                  <p className="whitespace-pre-wrap break-words font-mono">{message.content}</p>
                 </div>
               </div>
             ))}
