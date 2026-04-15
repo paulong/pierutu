@@ -24,11 +24,17 @@ export async function POST(request: Request) {
       cache: 'no-store',
     });
 
+    const driveFolderUrl = process.env.GOOGLE_DRIVE_FOLDER_URL || 'https://drive.google.com/drive/folders/YOUR_FOLDER_ID_HERE'; // Configura GOOGLE_DRIVE_FOLDER_URL en .env.local
+
     return NextResponse.json({
-      ok: response.ok,
+      success: response.ok,
       status: response.status,
       statusText: response.statusText,
       url: parsedUrl.toString(),
+      driveFolderUrl,
+      message: response.ok
+        ? `✅ Script ejecutado correctamente. Acceso directo a la carpeta: ${driveFolderUrl}`
+        : `❌ Error al ejecutar el script: ${response.status} ${response.statusText}`,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Error interno';

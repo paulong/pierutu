@@ -180,15 +180,31 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
 
     urlsToFetch.forEach(async (url) => {
       try {
-        await fetch('/api/fetch-link', {
+        const response = await fetch('/api/fetch-link', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ url }),
         });
+
+        if (response.ok) {
+          const data = await response.json();
+          const linkMessage: Message = {
+            id: `${Date.now()}-link-${url}`,
+            role: 'assistant',
+            content: data.message,
+          };
+          setMessages((prev) => [...prev, linkMessage]);
+        }
       } catch (error) {
         console.error('Error fetching link once:', error);
+        const errorMessage: Message = {
+          id: `${Date.now()}-link-error-${url}`,
+          role: 'assistant',
+          content: `❌ Error al procesar el link: ${url}`,
+        };
+        setMessages((prev) => [...prev, errorMessage]);
       }
     });
 
