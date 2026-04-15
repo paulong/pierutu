@@ -190,21 +190,17 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
 
         if (response.ok) {
           const data = await response.json();
-          const linkMessage: Message = {
-            id: `${Date.now()}-link-${url}`,
-            role: 'assistant',
-            content: data.message,
-          };
-          setMessages((prev) => [...prev, linkMessage]);
+          if (data.success && data.message) {
+            const linkMessage: Message = {
+              id: `${Date.now()}-link-${url}`,
+              role: 'assistant',
+              content: data.message,
+            };
+            setMessages((prev) => [...prev, linkMessage]);
+          }
         }
       } catch (error) {
         console.error('Error fetching link once:', error);
-        const errorMessage: Message = {
-          id: `${Date.now()}-link-error-${url}`,
-          role: 'assistant',
-          content: `❌ Error al procesar el link: ${url}`,
-        };
-        setMessages((prev) => [...prev, errorMessage]);
       }
     });
 
