@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const dispararScript = async (datos: any) => {
+const dispararScript = async (datos: Record<string, unknown>) => {
   const url = process.env.URL_SCRIPT_GOOGLE;
   if (!url) {
     throw new Error('Falta la variable de entorno URL_SCRIPT_GOOGLE');
