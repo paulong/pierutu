@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react';
+import { useState, useEffect, useRef, type ChangeEvent, type FormEvent } from 'react';
 
 interface AsistentePresupuestosClientProps {
   pinCorrecto: string;
@@ -24,6 +24,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
       content: 'Bienvenido al asistente de presupuestos. Ingresa los detalles y te ayudare a estructurarlo.',
     },
   ]);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // Efecto para hidratar el estado desde localStorage después del primer render
   useEffect(() => {
@@ -71,6 +72,12 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
       localStorage.setItem('pierutu-input', input);
     }
   }, [input, isHydrated]);
+
+  useEffect(() => {
+    if (isAuthorized && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [messages, isAuthorized]);
 
   const handleLogin = (e: FormEvent) => {
     e.preventDefault();
@@ -246,6 +253,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
                 </div>
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
         </main>
 
