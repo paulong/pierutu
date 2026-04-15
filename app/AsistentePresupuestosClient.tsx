@@ -13,61 +13,64 @@ type Message = {
 };
 
 export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePresupuestosClientProps) {
-  // Inicializar estado desde localStorage
-  const getInitialAuth = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('pierutu-auth') === 'true';
-    }
-    return false;
-  };
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [pin, setPin] = useState('');
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 'welcome',
+      role: 'assistant',
+      content: 'Bienvenido al asistente de presupuestos. Ingresa los detalles y te ayudare a estructurarlo.',
+    },
+  ]);
 
-  const getInitialMessages = (): Message[] => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('pierutu-messages');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
-          }
-        } catch (error) {
-          console.warn('Error loading saved messages:', error);
+  // Efecto para hidratar el estado desde localStorage después del primer render
+  useEffect(() => {
+    const savedAuth = localStorage.getItem('pierutu-auth');
+    const savedMessages = localStorage.getItem('pierutu-messages');
+    const savedInput = localStorage.getItem('pierutu-input');
+
+    if (savedAuth === 'true') {
+      setIsAuthorized(true);
+    }
+
+    if (savedMessages) {
+      try {
+        const parsedMessages = JSON.parse(savedMessages);
+        if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
+          setMessages(parsedMessages);
         }
+      } catch (error) {
+        console.warn('Error loading saved messages:', error);
       }
     }
-    return [
-      {
-        id: 'welcome',
-        role: 'assistant',
-        content: 'Bienvenido al asistente de presupuestos. Ingresa los detalles y te ayudare a estructurarlo.',
-      },
-    ];
-  };
 
-  const getInitialInput = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('pierutu-input') || '';
+    if (savedInput) {
+      setInput(savedInput);
     }
-    return '';
-  };
 
-  const [pin, setPin] = useState('');
-  const [isAuthorized, setIsAuthorized] = useState(getInitialAuth);
-  const [input, setInput] = useState(getInitialInput);
-  const [messages, setMessages] = useState<Message[]>(getInitialMessages);
+    setIsHydrated(true);
+  }, []);
 
   // Memoria de sesión - guardar cambios en localStorage
   useEffect(() => {
-    localStorage.setItem('pierutu-auth', isAuthorized.toString());
-  }, [isAuthorized]);
+    if (isHydrated) {
+      localStorage.setItem('pierutu-auth', isAuthorized.toString());
+    }
+  }, [isAuthorized, isHydrated]);
 
   useEffect(() => {
-    localStorage.setItem('pierutu-messages', JSON.stringify(messages));
-  }, [messages]);
+    if (isHydrated) {
+      localStorage.setItem('pierutu-messages', JSON.stringify(messages));
+    }
+  }, [messages, isHydrated]);
 
   useEffect(() => {
-    localStorage.setItem('pierutu-input', input);
-  }, [input]);
+    if (isHydrated) {
+      localStorage.setItem('pierutu-input', input);
+    }
+  }, [input, isHydrated]);
 
   const handleLogin = (e: FormEvent) => {
     e.preventDefault();
@@ -83,7 +86,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
     setInput(event.target.value);
   };
 
-  const handleSubmitChat = (event: FormEvent) => {
+  const handleSubmitChat = async (event: FormEvent) => {
     event.preventDefault();
 
     const messageText = input.trim();
@@ -95,14 +98,62 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
       content: messageText,
     };
 
-    const assistantMessage: Message = {
-      id: `${Date.now()}-assistant`,
-      role: 'assistant',
-      content: 'Recibido. Estoy generando el presupuesto... (implementa aqui tu logica de backend).',
-    };
-
-    setMessages((prev) => [...prev, userMessage, assistantMessage]);
+    // Agregar mensaje del usuario inmediatamente
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
+
+    try {
+      // Preparar mensajes para enviar al API (excluyendo el mensaje de bienvenida del sistema)
+      const messagesToSend = messages
+        .filter(msg => msg.id !== 'welcome')
+        .concat(userMessage)
+        .map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        }));
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: messagesToSend,
+        }),
+      });
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        // Si no podemos parsear el JSON, usar un mensaje genérico
+        data = { error: 'Error en la respuesta del servidor' };
+      }
+
+      if (!response.ok) {
+        const errorMessage = (data && data.error) ? data.error : `Error del servidor (${response.status})`;
+        throw new Error(errorMessage);
+      }
+
+      const assistantMessage: Message = {
+        id: `${Date.now()}-assistant`,
+        role: 'assistant',
+        content: data.response || 'Lo siento, no pude generar una respuesta.',
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+
+    } catch (error) {
+      console.error('Error al enviar mensaje:', error);
+
+      const errorMessage: Message = {
+        id: `${Date.now()}-error`,
+        role: 'assistant',
+        content: 'Lo siento, hubo un error al procesar tu mensaje. Por favor, intenta de nuevo.',
+      };
+
+      setMessages((prev) => [...prev, errorMessage]);
+    }
   };
 
   if (!pinCorrecto) {
@@ -119,33 +170,15 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
     );
   }
 
-  if (!isAuthorized) {
+  if (!pinCorrecto) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
-        <div className="w-full max-w-xs rounded-[1.75rem] border border-white/10 bg-white/5 p-4 shadow-[0_20px_60px_-30px_rgba(255,255,255,0.25)] backdrop-blur-sm">
-          <div className="flex items-center justify-between gap-3">
-            <span className="inline-block h-0.5 w-10 rounded-full bg-white/70" />
-            <p className="text-[9px] font-mono uppercase tracking-[0.45em] text-white/50">acceso</p>
-          </div>
-          <h1 className="mt-3 text-lg font-semibold tracking-tight text-white">Ingresa tu PIN</h1>
-          <p className="mt-2 text-[10px] leading-4 text-white/60 font-mono">Se requiere para entrar al asistente privado.</p>
-          <form onSubmit={handleLogin} className="mt-5 space-y-3">
-            <input
-              type="password"
-              maxLength={4}
-              className="w-full rounded-[1.5rem] border border-white/10 bg-black/20 px-4 py-2.5 text-center text-base text-white outline-none transition focus:border-white/40 font-mono"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              placeholder="PIN"
-              autoFocus
-            />
-            <button
-              type="submit"
-              className="w-full rounded-[1.5rem] bg-white px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-white/90 font-mono"
-            >
-              Entrar
-            </button>
-          </form>
+        <div className="w-full max-w-sm rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.45)] backdrop-blur-sm">
+          <p className="text-[9px] font-mono uppercase tracking-[0.4em] text-white/50">configuracion faltante</p>
+          <h1 className="mt-3 text-lg font-semibold tracking-tight text-white">PIN no configurado</h1>
+          <p className="mt-3 text-xs leading-5 text-white/70 font-mono">
+            Agrega <code className="rounded bg-white/10 px-1 py-0.5 text-[9px] text-white font-mono">PIN_CORRECTO</code> a tu archivo <code className="rounded bg-white/10 px-1 py-0.5 text-[9px] text-white font-mono">.env.local</code> y vuelve a ejecutar el build.
+          </p>
         </div>
       </div>
     );
@@ -153,13 +186,44 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="mx-auto flex h-full max-w-lg flex-col px-4 pb-32 pt-4 sm:px-5">
+      {/* Pantalla de login - se muestra como overlay cuando no está autorizado */}
+      {!isAuthorized && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black px-4">
+          <div className="w-full max-w-xs rounded-[1.75rem] border border-white/10 bg-white/5 p-4 shadow-[0_20px_60px_-30px_rgba(255,255,255,0.25)] backdrop-blur-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className="inline-block h-0.5 w-10 rounded-full bg-white/70" />
+              <p className="text-[9px] font-mono uppercase tracking-[0.45em] text-white/50">acceso</p>
+            </div>
+            <h1 className="mt-3 text-lg font-semibold tracking-tight text-white">Ingresa tu PIN</h1>
+            <p className="mt-2 text-[10px] leading-4 text-white/60 font-mono">Se requiere para entrar al asistente privado.</p>
+            <form onSubmit={handleLogin} className="mt-5 space-y-3">
+              <input
+                type="password"
+                maxLength={4}
+                className="w-full rounded-[1.5rem] border border-white/10 bg-black/20 px-4 py-2.5 text-center text-base text-white outline-none transition focus:border-white/40 font-mono"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                placeholder="PIN"
+                autoFocus
+              />
+              <button
+                type="submit"
+                className="w-full rounded-[1.5rem] bg-white px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-white/90 font-mono"
+              >
+                Entrar
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Interfaz del chat - siempre se renderiza pero se oculta detrás del login */}
+      <div className={`mx-auto flex h-full max-w-lg flex-col px-4 pb-32 pt-4 sm:px-5 ${!isAuthorized ? 'opacity-0 pointer-events-none' : ''}`}>
         <header className="mb-4 rounded-[2rem] border border-white/10 bg-white/5 px-4 py-4 backdrop-blur-sm sm:px-5">
           <div className="flex flex-col gap-1.5">
             <p className="font-mono text-[9px] uppercase tracking-[0.35em] text-white/50">PierUtu</p>
             <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl font-mono">Asistente de presupuestos</h1>
           </div>
-         
         </header>
 
         <main className="flex-1 overflow-y-auto pr-0">
