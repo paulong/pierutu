@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect, useRef, type ChangeEvent, type FormEvent } from 'react';
+import { useState, useEffect, useRef, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 
 interface AsistentePresupuestosClientProps {
   pinCorrecto: string;
@@ -12,24 +12,70 @@ type Message = {
   content: string;
 };
 
+const initialMessages: Message[] = [
+  {
+    id: 'welcome',
+    role: 'assistant',
+    content: 'Bienvenido al asistente de presupuestos. Ingresa los detalles y te ayudare a estructurarlo.',
+  },
+];
+
+function shortenUrl(url: string, maxLength = 50) {
+  if (url.length <= maxLength) return url;
+  const half = Math.floor((maxLength - 1) / 2);
+  return `${url.slice(0, half)}…${url.slice(-half)}`;
+}
+
+function renderMessageContent(content: string, messageId: string) {
+  const urlRegex = /https?:\/\/[^\s]+/g;
+  const parts: Array<string | ReactNode> = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let linkIndex = 0;
+
+  while ((match = urlRegex.exec(content)) !== null) {
+    const url = match[0];
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+
+    parts.push(
+      <a
+        key={`${messageId}-link-${linkIndex++}`}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-cyan-300 underline decoration-white/20 hover:text-cyan-100 break-all"
+        title={url}
+      >
+        {shortenUrl(url)}
+      </a>
+    );
+
+    lastIndex = match.index + url.length;
+  }
+
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : content;
+}
+
 export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePresupuestosClientProps) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [pin, setPin] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: 'Bienvenido al asistente de presupuestos. Ingresa los detalles y te ayudare a estructurarlo.',
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [archivedMessages, setArchivedMessages] = useState<Message[]>([]);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // Efecto para hidratar el estado desde localStorage después del primer render
   useEffect(() => {
     const savedAuth = localStorage.getItem('pierutu-auth');
     const savedMessages = localStorage.getItem('pierutu-messages');
+    const savedArchivedMessages = localStorage.getItem('pierutu-archived-messages');
     const savedInput = localStorage.getItem('pierutu-input');
 
     if (savedAuth === 'true') {
@@ -44,6 +90,17 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
         }
       } catch (error) {
         console.warn('Error loading saved messages:', error);
+      }
+    }
+
+    if (savedArchivedMessages) {
+      try {
+        const parsedArchivedMessages = JSON.parse(savedArchivedMessages);
+        if (Array.isArray(parsedArchivedMessages)) {
+          setArchivedMessages(parsedArchivedMessages);
+        }
+      } catch (error) {
+        console.warn('Error loading archived messages:', error);
       }
     }
 
@@ -66,6 +123,12 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
       localStorage.setItem('pierutu-messages', JSON.stringify(messages));
     }
   }, [messages, isHydrated]);
+
+  useEffect(() => {
+    if (isHydrated) {
+      localStorage.setItem('pierutu-archived-messages', JSON.stringify(archivedMessages));
+    }
+  }, [archivedMessages, isHydrated]);
 
   useEffect(() => {
     if (isHydrated) {
@@ -99,6 +162,13 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
     const messageText = input.trim();
     if (!messageText) return;
 
+    if (messageText === '/new') {
+      setArchivedMessages((prev) => [...prev, ...messages]);
+      setMessages(initialMessages);
+      setInput('');
+      return;
+    }
+
     const userMessage: Message = {
       id: `${Date.now()}-user`,
       role: 'user',
@@ -110,8 +180,9 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
     setInput('');
 
     try {
-      // Preparar mensajes para enviar al API (excluyendo el mensaje de bienvenida del sistema)
-      const messagesToSend = messages
+      // Preparar mensajes para enviar al API (incluyendo memoria archivada y excluyendo el mensaje de bienvenida del sistema)
+      const messagesToSend = archivedMessages
+        .concat(messages)
         .filter(msg => msg.id !== 'welcome')
         .concat(userMessage)
         .map(msg => ({
@@ -249,7 +320,9 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
                       : 'border-white/10 bg-white/5 text-white rounded-bl-none'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap break-words font-mono">{message.content}</p>
+                  <p className="whitespace-pre-wrap break-words font-mono">
+                    {renderMessageContent(message.content, message.id)}
+                  </p>
                 </div>
               </div>
             ))}
