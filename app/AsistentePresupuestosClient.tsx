@@ -26,6 +26,11 @@ function shortenUrl(url: string, maxLength = 50) {
   return `${url.slice(0, half)}…${url.slice(-half)}`;
 }
 
+function extractUrls(text: string) {
+  const urlRegex = /https?:\/\/[^\s]+/g;
+  return Array.from(text.matchAll(urlRegex), (match) => match[0]);
+}
+
 function renderMessageContent(content: string, messageId: string) {
   const urlRegex = /https?:\/\/[^\s]+/g;
   const parts: Array<string | ReactNode> = [];
@@ -69,6 +74,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [archivedMessages, setArchivedMessages] = useState<Message[]>([]);
+  const [processedLinkUrls, setProcessedLinkUrls] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // Efecto para hidratar el estado desde localStorage después del primer render
@@ -104,6 +110,18 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
       }
     }
 
+    const savedProcessedLinkUrls = localStorage.getItem('pierutu-processed-links');
+    if (savedProcessedLinkUrls) {
+      try {
+        const parsedProcessedLinkUrls = JSON.parse(savedProcessedLinkUrls);
+        if (Array.isArray(parsedProcessedLinkUrls)) {
+          setProcessedLinkUrls(parsedProcessedLinkUrls);
+        }
+      } catch (error) {
+        console.warn('Error loading processed link URLs:', error);
+      }
+    }
+
     if (savedInput) {
       setInput(savedInput);
     }
@@ -132,6 +150,12 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
 
   useEffect(() => {
     if (isHydrated) {
+      localStorage.setItem('pierutu-processed-links', JSON.stringify(processedLinkUrls));
+    }
+  }, [processedLinkUrls, isHydrated]);
+
+  useEffect(() => {
+    if (isHydrated) {
       localStorage.setItem('pierutu-input', input);
     }
   }, [input, isHydrated]);
@@ -141,6 +165,35 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
   }, [messages, isAuthorized]);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    const foundUrls = messages
+      .filter((msg) => msg.role === 'assistant')
+      .flatMap((msg) => extractUrls(msg.content));
+
+    const uniqueUrls = Array.from(new Set(foundUrls));
+    const urlsToFetch = uniqueUrls.filter((url) => !processedLinkUrls.includes(url));
+
+    if (urlsToFetch.length === 0) return;
+
+    urlsToFetch.forEach(async (url) => {
+      try {
+        await fetch('/api/fetch-link', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url }),
+        });
+      } catch (error) {
+        console.error('Error fetching link once:', error);
+      }
+    });
+
+    setProcessedLinkUrls((prev) => [...prev, ...urlsToFetch.filter((url) => !prev.includes(url))]);
+  }, [messages, processedLinkUrls, isHydrated]);
 
   const handleLogin = (e: FormEvent) => {
     e.preventDefault();
