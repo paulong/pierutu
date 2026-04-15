@@ -127,11 +127,13 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
         data = await response.json();
       } catch (parseError) {
         // Si no podemos parsear el JSON, usar un mensaje genérico
-        data = { error: 'Error en la respuesta del servidor' };
+        data = { error: 'Error en la respuesta del servidor', details: undefined };
       }
 
       if (!response.ok) {
-        const errorMessage = (data && data.error) ? data.error : `Error del servidor (${response.status})`;
+        const errorMessage = (data && (data.error || data.details))
+          ? `${data.error || 'Error del servidor'}${data.details ? `: ${data.details}` : ''}`
+          : `Error del servidor (${response.status})`;
         throw new Error(errorMessage);
       }
 
@@ -146,10 +148,13 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
     } catch (error) {
       console.error('Error al enviar mensaje:', error);
 
+      const errorMessageText = error instanceof Error ? error.message : 'Lo siento, hubo un error al procesar tu mensaje. Por favor, intenta de nuevo.';
+      console.error('Error final de chat:', errorMessageText);
+
       const errorMessage: Message = {
         id: `${Date.now()}-error`,
         role: 'assistant',
-        content: 'Lo siento, hubo un error al procesar tu mensaje. Por favor, intenta de nuevo.',
+        content: errorMessageText,
       };
 
       setMessages((prev) => [...prev, errorMessage]);

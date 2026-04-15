@@ -57,8 +57,11 @@ export async function POST(request: Request) {
 
     console.log('API key encontrada, inicializando modelo...');
 
-    // Crear el cliente de Google Gemini
-    const model = google('gemini-pro');
+    const modelName = process.env.GOOGLE_AI_MODEL ?? 'gemini-flash-latest';
+    console.log('Usando modelo de Google AI:', modelName);
+
+    // Crear el cliente de Google AI compatible.
+    const model = google(modelName);
 
     // Preparar los mensajes para el LLM
     const conversationMessages = [
