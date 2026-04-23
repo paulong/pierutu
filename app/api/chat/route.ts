@@ -41,10 +41,10 @@ async function processNotionCommand(userMessage: string) {
 
   // Patrones para detectar creación de página en Notion
   const createPatterns = [
-    /crea(?:r)?\s+(?:una\s+)?p[áa]gina\s+(?:en\s+)?notion\s+(?:con\s+)?(.+)/i,
-    /haz\s+(?:una\s+)?nota\s+(?:en\s+)?notion\s+(?:con\s+)?(.+)/i,
-    /guarda\s+(?:en\s+)?notion\s+(.+)/i,
-    /notion\s+crea(?:r)?\s+(.+)/i,
+    /(?:crea(?:r)?|haz|guarda|agrega|añade)\s+(?:una\s+)?(?:p[áa]gina|nota|entrada|registro)(?:\s+(?:en\s+)?notion)?(?:\s+(?:con\s+|llamada\s+|llamado\s+|que\s+se\s+llame\s+|llame\s+)?)(.+)/i,
+    /(?:crea(?:r)?|haz|guarda|agrega|añade)\s+(.+?)\s+(?:en\s+)?notion/i,
+    /notion.*(?:crea(?:r)?|haz|guarda|agrega|añade)\s+(.+)/i,
+    /(?:llame|llamada|que\s+se\s+llame)\s+(.+?)\s+(?:en\s+)?notion/i,
   ];
 
   for (const pattern of createPatterns) {
