@@ -184,14 +184,6 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: 'Error interno del servidor',
-
-    // Más detalles del error para debugging
-    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-    console.error('Detalles del error:', errorMessage);
-
-    return NextResponse.json(
-      {
-        error: 'Error interno del servidor',
         details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
       },
       { status: 500 }
