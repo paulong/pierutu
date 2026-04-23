@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
+import { createNotionPage } from '../../../lib/notion';
 
 type ChatMessage = {
   role: 'user' | 'assistant' | 'system';
@@ -52,34 +53,17 @@ async function processNotionCommand(userMessage: string) {
       const content = match[1].trim();
       if (content) {
         try {
-          // Llamar a la API de Notion
-          const notionResponse = await fetch('http://localhost:3000/api/notion', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ text: content }),
-          });
-
-          if (notionResponse.ok) {
-            const data = await notionResponse.json();
-            return {
-              action: 'created',
-              content,
-              pageId: data.data?.id,
-              url: data.data?.url,
-            };
-          } else {
-            const errorData = await notionResponse.json();
-            return {
-              action: 'error',
-              error: errorData.error || 'Error desconocido',
-            };
-          }
+          const data = await createNotionPage(content);
+          return {
+            action: 'created',
+            content,
+            pageId: data.id,
+            url: data.url,
+          };
         } catch (error) {
           return {
             action: 'error',
-            error: error instanceof Error ? error.message : 'Error de conexión',
+            error: error instanceof Error ? error.message : 'Error desconocido',
           };
         }
       }
