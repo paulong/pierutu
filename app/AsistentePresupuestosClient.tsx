@@ -143,13 +143,19 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'es-ES';
-    recognition.interimResults = false;
+    recognition.interimResults = true;
+    recognition.continuous = true;
     recognition.maxAlternatives = 1;
 
     recognition.onresult = (event: any) => {
-      const transcript = event.results[0]?.[0]?.transcript?.trim();
-      if (transcript) {
-        setInput((prev) => `${prev} ${transcript}`.trim());
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
+      }
+      if (finalTranscript) {
+        setInput((prev) => `${prev} ${finalTranscript}`.trim());
       }
     };
 
@@ -470,8 +476,8 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
               className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-black transition disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="Enviar mensaje"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-                <path d="M3.75 2.25a.75.75 0 0 1 .75.75v8.19l11.47-6.58a.75.75 0 0 1 .89 1.2l-11.47 6.58 11.47 6.58a.75.75 0 0 1-.89 1.2L4.5 12.56v8.19a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75z" />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             </button>
             <button
@@ -481,16 +487,15 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
               disabled={!speechSupported}
               aria-label={speechSupported ? (isRecording ? 'Detener grabación de voz' : 'Grabar audio') : 'Reconocimiento de voz no disponible'}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-                <path d="M12 15.75a3.75 3.75 0 0 0 3.75-3.75V6.75a3.75 3.75 0 0 0-7.5 0v5.25A3.75 3.75 0 0 0 12 15.75z" />
-                <path d="M6.75 12a5.25 5.25 0 0 0 10.5 0h1.5a6.75 6.75 0 0 1-13.5 0h1.5z" />
-                <path d="M12 18.75a7.5 7.5 0 0 0 7.5-7.5h1.5a9 9 0 0 1-18 0h1.5a7.5 7.5 0 0 0 7.5 7.5z" />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
               </svg>
             </button>
           </form>
-          <p className="mt-2 text-center text-[10px] uppercase tracking-[0.2em] text-white/40 font-mono">
-            {speechSupported ? 'Pulsa Audio para dictar tu mensaje y luego Enviar.' : 'Reconocimiento de voz no disponible en este navegador.'}
-          </p>
+          
           <p className="mt-2 text-center text-[10px] uppercase tracking-[0.2em] text-white/40 font-mono">
             made by AOCO
           </p>
