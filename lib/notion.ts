@@ -5,6 +5,7 @@ const NOTION_DATABASE_ID = process.env.NOTION_DATABASE_ID;
 const NOTION_PARENT_PAGE_ID = process.env.NOTION_PARENT_PAGE_ID;
 const NOTION_API_BASE = 'https://api.notion.com/v1';
 const NOTION_API_VERSION = '2022-06-28';
+const PAGE_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function notionFetch(path: string, options: RequestInit) {
   const url = `${NOTION_API_BASE}${path}`;
@@ -18,6 +19,37 @@ async function notionFetch(path: string, options: RequestInit) {
     },
   });
   return response;
+}
+
+async function resolvePageId(value: string) {
+  if (PAGE_ID_REGEX.test(value)) {
+    return value;
+  }
+
+  const response = await notionFetch('/search', {
+    method: 'POST',
+    body: JSON.stringify({
+      query: value,
+      filter: {
+        property: 'object',
+        value: 'page',
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Error al buscar página en Notion: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  const result = data.results?.find((item: any) => item.object === 'page');
+
+  if (!result) {
+    throw new Error(`No se encontró ninguna página de Notion con el nombre "${value}".`);
+  }
+
+  return result.id;
 }
 
 function buildCreatePagePayload({ title, text, properties, isDatabase }: { title?: string; text?: string; properties?: any; isDatabase?: boolean; }) {
@@ -81,9 +113,14 @@ export async function createNotionPage(text: string, title?: string, properties?
     throw new Error('Se requiere databaseId o parentPageId para crear una página en Notion.');
   }
 
-  const payload = buildCreatePagePayload({ title, text, properties, isDatabase: !targetParentPageId });
+  let resolvedParentPageId: string | undefined;
   if (targetParentPageId) {
-    payload.parent = { page_id: targetParentPageId };
+    resolvedParentPageId = await resolvePageId(targetParentPageId);
+  }
+
+  const payload = buildCreatePagePayload({ title, text, properties, isDatabase: !resolvedParentPageId });
+  if (resolvedParentPageId) {
+    payload.parent = { page_id: resolvedParentPageId };
   } else {
     payload.parent.database_id = targetDatabaseId;
   }

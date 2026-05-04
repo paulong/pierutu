@@ -75,7 +75,10 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [archivedMessages, setArchivedMessages] = useState<Message[]>([]);
   const [processedLinkUrls, setProcessedLinkUrls] = useState<string[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   // Efecto para hidratar el estado desde localStorage después del primer render
   useEffect(() => {
@@ -128,6 +131,64 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
 
     setIsHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setSpeechSupported(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-ES';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0]?.[0]?.transcript?.trim();
+      if (transcript) {
+        setInput((prev) => `${prev} ${transcript}`.trim());
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event);
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+    };
+
+    recognitionRef.current = recognition;
+    setSpeechSupported(true);
+  }, []);
+
+  const handleToggleRecording = () => {
+    if (!speechSupported || !recognitionRef.current) {
+      alert('Tu navegador no soporta reconocimiento de voz. Prueba con Chrome o Edge.');
+      return;
+    }
+
+    if (isRecording) {
+      recognitionRef.current.stop();
+      return;
+    }
+
+    try {
+      recognitionRef.current.start();
+    } catch (error) {
+      console.error('No se pudo iniciar el reconocimiento de voz:', error);
+      setIsRecording(false);
+      alert('No se pudo iniciar grabación de audio. Intenta de nuevo.');
+    }
+  };
 
   // Memoria de sesión - guardar cambios en localStorage
   useEffect(() => {
@@ -404,6 +465,15 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
               className="flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-white outline-none transition focus:border-white/40 font-mono"
             />
             <button
+              type="button"
+              onClick={handleToggleRecording}
+              className={`rounded-full px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] transition font-mono ${isRecording ? 'bg-red-500 text-white' : 'bg-white text-black'} ${!speechSupported ? 'opacity-40 cursor-not-allowed' : ''}`}
+              disabled={!speechSupported}
+              title={speechSupported ? (isRecording ? 'Detener grabación de voz' : 'Grabar audio') : 'Reconocimiento de voz no disponible'}
+            >
+              {isRecording ? 'Detener' : 'Audio'}
+            </button>
+            <button
               type="submit"
               disabled={!input.trim()}
               className="rounded-full bg-white px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] text-black transition disabled:cursor-not-allowed disabled:opacity-40 font-mono"
@@ -411,6 +481,9 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
               Enviar
             </button>
           </form>
+          <p className="mt-2 text-center text-[10px] uppercase tracking-[0.2em] text-white/40 font-mono">
+            {speechSupported ? 'Pulsa Audio para dictar tu mensaje y luego Enviar.' : 'Reconocimiento de voz no disponible en este navegador.'}
+          </p>
           <p className="mt-2 text-center text-[10px] uppercase tracking-[0.2em] text-white/40 font-mono">
             made by AOCO
           </p>
