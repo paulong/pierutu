@@ -400,7 +400,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
       className="relative min-h-screen overflow-hidden bg-[#0b1220] text-white"
       style={{
         backgroundImage:
-          'radial-gradient(circle at 15% 15%, rgba(255,255,255,0.1), transparent 20%), radial-gradient(circle at 85% 15%, rgba(255,255,255,0.06), transparent 18%), radial-gradient(circle at 50% 85%, rgba(255,255,255,0.05), transparent 28%), linear-gradient(180deg, #101827 0%, #060b13 100%)',
+          'radial-gradient(circle at 10% 10%, rgba(255,255,255,0.18), transparent 16%), radial-gradient(circle at 85% 10%, rgba(255,255,255,0.1), transparent 18%), radial-gradient(circle at 20% 80%, rgba(56,189,248,0.08), transparent 24%), radial-gradient(circle at 80% 80%, rgba(168,85,247,0.07), transparent 22%), linear-gradient(180deg, #0b1220 0%, #06080f 45%, #070c14 100%)',
       }}
     >
       <div className="pointer-events-none absolute inset-0 opacity-80" />
@@ -465,13 +465,13 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
           </div>
         </main>
 
-        <footer className="fixed inset-x-0 bottom-0 border-t border-white/10 bg-black/70 px-4 py-4 backdrop-blur-2xl shadow-[0_-20px_60px_-30px_rgba(0,0,0,0.6)] sm:px-5">
+        <footer className="fixed inset-x-0 bottom-0 border-t border-white/10 bg-transparent px-4 py-4 backdrop-blur-2xl shadow-[0_-24px_60px_-34px_rgba(0,0,0,0.45)] sm:px-5">
           <form onSubmit={handleSubmitChat} className="flex items-center gap-3">
             <input
               value={input}
               onChange={handleInputChange}
               placeholder="Escribe los detalles del presupuesto..."
-              className="flex-1 rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm text-white placeholder:text-white/50 outline-none transition focus:border-white/30 focus:bg-white/15 font-mono"
+              className="flex-1 rounded-full border border-white/20 bg-white/10 backdrop-blur-xl px-5 py-3 text-sm text-white placeholder:text-white/50 outline-none transition focus:border-white/30 focus:bg-white/15 font-mono"
             />
             <button
               type="submit"
