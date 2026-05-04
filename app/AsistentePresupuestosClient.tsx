@@ -151,14 +151,13 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
 
     recognition.onresult = (event: any) => {
       let newFinal = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          newFinal += event.results[i][0].transcript;
-        }
+      const result = event.results[event.resultIndex];
+      if (result.isFinal) {
+        newFinal = result[0].transcript;
       }
       if (newFinal) {
         accumulatedTranscriptRef.current += newFinal;
-        setInput(initialInputRef.current + ' ' + accumulatedTranscriptRef.current.trim());
+        setInput(initialInputRef.current + (accumulatedTranscriptRef.current ? ' ' + accumulatedTranscriptRef.current.trim() : ''));
       }
     };
 
@@ -379,7 +378,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
   if (!pinCorrecto) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
-        <div className="w-full max-w-sm rounded-[2rem] border border-white/20 bg-white/10 p-6 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.45)] backdrop-blur-lg">
+        <div className="w-full max-w-sm rounded-[2rem] border border-white/30 bg-white/20 p-6 shadow-[0_30px_80px_-40px_rgba(31,38,135,0.37)] backdrop-blur-xl">
           <p className="text-[9px] font-mono uppercase tracking-[0.4em] text-white/50">configuracion faltante</p>
           <h1 className="mt-3 text-lg font-semibold tracking-tight text-white">PIN no configurado</h1>
           <p className="mt-3 text-xs leading-5 text-white/70 font-mono">
@@ -393,7 +392,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
   if (!pinCorrecto) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
-        <div className="w-full max-w-sm rounded-[2rem] border border-white/20 bg-white/10 p-6 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.45)] backdrop-blur-lg">
+        <div className="w-full max-w-sm rounded-[2rem] border border-white/30 bg-white/20 p-6 shadow-[0_30px_80px_-40px_rgba(31,38,135,0.37)] backdrop-blur-xl">
           <p className="text-[9px] font-mono uppercase tracking-[0.4em] text-white/50">configuracion faltante</p>
           <h1 className="mt-3 text-lg font-semibold tracking-tight text-white">PIN no configurado</h1>
           <p className="mt-3 text-xs leading-5 text-white/70 font-mono">
@@ -409,7 +408,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
       {/* Pantalla de login - se muestra como overlay cuando no está autorizado */}
       {!isAuthorized && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black px-4">
-          <div className="w-full max-w-xs rounded-[1.75rem] border border-white/20 bg-white/10 p-4 shadow-[0_20px_60px_-30px_rgba(255,255,255,0.25)] backdrop-blur-lg">
+          <div className="w-full max-w-xs rounded-[1.75rem] border border-white/30 bg-white/20 p-4 shadow-[0_20px_60px_-30px_rgba(31,38,135,0.37)] backdrop-blur-xl">
             <div className="flex items-center justify-between gap-3">
               <span className="inline-block h-0.5 w-10 rounded-full bg-white/70" />
               <p className="text-[9px] font-mono uppercase tracking-[0.45em] text-white/50">acceso</p>
@@ -439,7 +438,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
 
       {/* Interfaz del chat - siempre se renderiza pero se oculta detrás del login */}
       <div className={`mx-auto flex h-full max-w-lg flex-col px-4 pb-32 pt-4 sm:px-5 ${!isAuthorized ? 'opacity-0 pointer-events-none' : ''}`}>
-        <header className="mb-4 rounded-[2rem] border border-white/20 bg-white/10 px-4 py-4 backdrop-blur-lg shadow-[0_8px_32px_rgba(0,0,0,0.37)] sm:px-5">
+        <header className="mb-4 rounded-[2rem] border border-white/30 bg-white/20 px-4 py-4 backdrop-blur-xl shadow-[0_8px_32px_rgba(31,38,135,0.37)] sm:px-5">
           <div className="flex flex-col gap-1.5">
             <p className="font-mono text-[9px] uppercase tracking-[0.35em] text-white/50">PierUtu</p>
             <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl font-mono">Asistente de presupuestos</h1>
@@ -451,10 +450,10 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
             {messages.map((message) => (
               <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div
-                  className={`max-w-[95%] rounded-[1.75rem] border px-3 py-2.5 text-xs leading-5 break-words overflow-hidden backdrop-blur-lg shadow-[0_8px_32px_rgba(0,0,0,0.37)] ${
+                  className={`max-w-[95%] rounded-[1.75rem] border px-3 py-2.5 text-xs leading-5 break-words overflow-hidden backdrop-blur-xl shadow-[0_8px_32px_rgba(31,38,135,0.37)] ${
                     message.role === 'user'
-                      ? 'border-white/20 bg-white/10 text-black rounded-br-none'
-                      : 'border-white/20 bg-white/10 text-white rounded-bl-none'
+                      ? 'border-white/30 bg-white/20 text-black rounded-br-none'
+                      : 'border-white/30 bg-transparent text-white rounded-bl-none'
                   }`}
                 >
                   <p className="whitespace-pre-wrap break-words font-mono">
@@ -467,7 +466,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
           </div>
         </main>
 
-        <footer className="fixed inset-x-0 bottom-0 border-t border-white/20 bg-black/90 px-4 py-3 backdrop-blur-lg shadow-[0_-8px_32px_rgba(0,0,0,0.37)] sm:px-5">
+        <footer className="fixed inset-x-0 bottom-0 border-t border-white/30 bg-black/80 px-4 py-3 backdrop-blur-xl shadow-[0_-8px_32px_rgba(31,38,135,0.37)] sm:px-5">
           <form onSubmit={handleSubmitChat} className="flex items-center gap-2">
             <input
               value={input}
