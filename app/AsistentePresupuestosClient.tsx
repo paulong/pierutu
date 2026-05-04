@@ -79,6 +79,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
   const [speechSupported, setSpeechSupported] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const recognitionRef = useRef<any>(null);
+  const manualStopRef = useRef(false);
 
   // Efecto para hidratar el estado desde localStorage después del primer render
   useEffect(() => {
@@ -156,15 +157,26 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
 
     recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event);
+      manualStopRef.current = true;
       setIsRecording(false);
     };
 
     recognition.onend = () => {
-      setIsRecording(false);
+      if (!manualStopRef.current) {
+        try {
+          recognition.start();
+        } catch (error) {
+          console.error('No se pudo reiniciar el reconocimiento tras pausa:', error);
+          setIsRecording(false);
+        }
+      } else {
+        setIsRecording(false);
+      }
     };
 
     recognition.onstart = () => {
       setIsRecording(true);
+      manualStopRef.current = false;
     };
 
     recognitionRef.current = recognition;
@@ -178,11 +190,13 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
     }
 
     if (isRecording) {
+      manualStopRef.current = true;
       recognitionRef.current.stop();
       return;
     }
 
     try {
+      manualStopRef.current = false;
       recognitionRef.current.start();
     } catch (error) {
       console.error('No se pudo iniciar el reconocimiento de voz:', error);
@@ -471,7 +485,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
             <button
               type="button"
               onClick={handleToggleRecording}
-              className={`inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_16px_35px_-20px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/15 hover:border-white/25 ${isRecording ? 'ring-2 ring-cyan-400/60 text-cyan-100' : 'text-white'} ${!speechSupported ? 'opacity-40 cursor-not-allowed' : ''}`}
+              className={`inline-flex h-12 w-12 items-center justify-center rounded-full border shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_16px_35px_-20px_rgba(0,0,0,0.35)] backdrop-blur-xl transition ${isRecording ? 'border-red-400 bg-red-500 text-white hover:bg-red-500' : 'border-white/20 bg-white/10 text-white hover:bg-white/15'} ${!speechSupported ? 'opacity-40 cursor-not-allowed' : ''}`}
               disabled={!speechSupported}
               aria-label={speechSupported ? (isRecording ? 'Detener grabación de voz' : 'Grabar audio') : 'Reconocimiento de voz no disponible'}
             >
@@ -483,12 +497,6 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
               </svg>
             </button>
           </form>
-          {isRecording && (
-            <div className="mt-3 flex items-center justify-center gap-2 text-sm text-white/90 font-semibold uppercase tracking-[0.2em]">
-              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />
-              <span>Grabando...</span>
-            </div>
-          )}
           <p className="mt-2 text-center text-[10px] uppercase tracking-[0.2em] text-white/40 font-mono">
             made by AOCO
           </p>
