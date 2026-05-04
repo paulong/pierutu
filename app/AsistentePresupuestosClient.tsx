@@ -465,20 +465,27 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
               className="flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-white outline-none transition focus:border-white/40 font-mono"
             />
             <button
-              type="button"
-              onClick={handleToggleRecording}
-              className={`rounded-full px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] transition font-mono ${isRecording ? 'bg-red-500 text-white' : 'bg-white text-black'} ${!speechSupported ? 'opacity-40 cursor-not-allowed' : ''}`}
-              disabled={!speechSupported}
-              title={speechSupported ? (isRecording ? 'Detener grabación de voz' : 'Grabar audio') : 'Reconocimiento de voz no disponible'}
-            >
-              {isRecording ? 'Detener' : 'Audio'}
-            </button>
-            <button
               type="submit"
               disabled={!input.trim()}
-              className="rounded-full bg-white px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] text-black transition disabled:cursor-not-allowed disabled:opacity-40 font-mono"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-black transition disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Enviar mensaje"
             >
-              Enviar
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                <path d="M3.75 2.25a.75.75 0 0 1 .75.75v8.19l11.47-6.58a.75.75 0 0 1 .89 1.2l-11.47 6.58 11.47 6.58a.75.75 0 0 1-.89 1.2L4.5 12.56v8.19a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75z" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={handleToggleRecording}
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-full transition ${isRecording ? 'bg-red-500 text-white' : 'bg-white text-black'} ${!speechSupported ? 'opacity-40 cursor-not-allowed' : ''}`}
+              disabled={!speechSupported}
+              aria-label={speechSupported ? (isRecording ? 'Detener grabación de voz' : 'Grabar audio') : 'Reconocimiento de voz no disponible'}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                <path d="M12 15.75a3.75 3.75 0 0 0 3.75-3.75V6.75a3.75 3.75 0 0 0-7.5 0v5.25A3.75 3.75 0 0 0 12 15.75z" />
+                <path d="M6.75 12a5.25 5.25 0 0 0 10.5 0h1.5a6.75 6.75 0 0 1-13.5 0h1.5z" />
+                <path d="M12 18.75a7.5 7.5 0 0 0 7.5-7.5h1.5a9 9 0 0 1-18 0h1.5a7.5 7.5 0 0 0 7.5 7.5z" />
+              </svg>
             </button>
           </form>
           <p className="mt-2 text-center text-[10px] uppercase tracking-[0.2em] text-white/40 font-mono">
