@@ -81,6 +81,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
   const recognitionRef = useRef<any>(null);
   const initialInputRef = useRef('');
   const accumulatedTranscriptRef = useRef('');
+  const lastResultIndexRef = useRef(0);
 
   // Efecto para hidratar el estado desde localStorage después del primer render
   useEffect(() => {
@@ -151,13 +152,17 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
 
     recognition.onresult = (event: any) => {
       let newFinal = '';
-      const result = event.results[event.resultIndex];
-      if (result.isFinal) {
-        newFinal = result[0].transcript;
+      for (let i = Math.max(event.resultIndex, lastResultIndexRef.current); i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          newFinal += event.results[i][0].transcript + ' ';
+        }
       }
-      if (newFinal) {
+      lastResultIndexRef.current = event.results.length;
+
+      if (newFinal.trim()) {
         accumulatedTranscriptRef.current += newFinal;
-        setInput(initialInputRef.current + (accumulatedTranscriptRef.current ? ' ' + accumulatedTranscriptRef.current.trim() : ''));
+        const combinedText = accumulatedTranscriptRef.current.trim();
+        setInput(initialInputRef.current.trim() ? `${initialInputRef.current.trim()} ${combinedText}` : combinedText);
       }
     };
 
@@ -172,6 +177,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
 
     recognition.onstart = () => {
       setIsRecording(true);
+      lastResultIndexRef.current = 0;
     };
 
     recognitionRef.current = recognition;
@@ -389,22 +395,15 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
     );
   }
 
-  if (!pinCorrecto) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
-        <div className="w-full max-w-sm rounded-[2rem] border border-white/30 bg-white/20 p-6 shadow-[0_30px_80px_-40px_rgba(31,38,135,0.37)] backdrop-blur-xl">
-          <p className="text-[9px] font-mono uppercase tracking-[0.4em] text-white/50">configuracion faltante</p>
-          <h1 className="mt-3 text-lg font-semibold tracking-tight text-white">PIN no configurado</h1>
-          <p className="mt-3 text-xs leading-5 text-white/70 font-mono">
-            Agrega <code className="rounded bg-white/10 px-1 py-0.5 text-[9px] text-white font-mono">PIN_CORRECTO</code> a tu archivo <code className="rounded bg-white/10 px-1 py-0.5 text-[9px] text-white font-mono">.env.local</code> y vuelve a ejecutar el build.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div
+      className="relative min-h-screen overflow-hidden bg-[#0b1220] text-white"
+      style={{
+        backgroundImage:
+          'radial-gradient(circle at 15% 15%, rgba(255,255,255,0.1), transparent 20%), radial-gradient(circle at 85% 15%, rgba(255,255,255,0.06), transparent 18%), radial-gradient(circle at 50% 85%, rgba(255,255,255,0.05), transparent 28%), linear-gradient(180deg, #101827 0%, #060b13 100%)',
+      }}
+    >
+      <div className="pointer-events-none absolute inset-0 opacity-80" />
       {/* Pantalla de login - se muestra como overlay cuando no está autorizado */}
       {!isAuthorized && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black px-4">
@@ -438,7 +437,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
 
       {/* Interfaz del chat - siempre se renderiza pero se oculta detrás del login */}
       <div className={`mx-auto flex h-full max-w-lg flex-col px-4 pb-32 pt-4 sm:px-5 ${!isAuthorized ? 'opacity-0 pointer-events-none' : ''}`}>
-        <header className="mb-4 rounded-[2rem] border border-white/30 bg-white/20 px-4 py-4 backdrop-blur-xl shadow-[0_8px_32px_rgba(31,38,135,0.37)] sm:px-5">
+        <header className="mb-4 rounded-[2.5rem] border border-white/15 bg-white/10 px-5 py-5 backdrop-blur-2xl shadow-[0_25px_60px_-35px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.12)] sm:px-6">
           <div className="flex flex-col gap-1.5">
             <p className="font-mono text-[9px] uppercase tracking-[0.35em] text-white/50">PierUtu</p>
             <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl font-mono">Asistente de presupuestos</h1>
@@ -446,14 +445,14 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
         </header>
 
         <main className="flex-1 overflow-y-auto overflow-x-hidden pr-0">
-          <div className="space-y-2.5 pb-4">
+          <div className="space-y-4 pb-4">
             {messages.map((message) => (
               <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div
-                  className={`max-w-[95%] rounded-[1.75rem] border px-3 py-2.5 text-xs leading-5 break-words overflow-hidden backdrop-blur-xl shadow-[0_8px_32px_rgba(31,38,135,0.37)] ${
+                  className={`max-w-[95%] rounded-[2rem] border px-4 py-3 text-sm leading-6 break-words overflow-hidden backdrop-blur-2xl shadow-[0_18px_40px_-25px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.12)] ${
                     message.role === 'user'
-                      ? 'border-white/30 bg-white/20 text-black rounded-br-none'
-                      : 'border-white/30 bg-transparent text-white rounded-bl-none'
+                      ? 'border-white/15 bg-white/12 text-white rounded-br-[1.75rem]'
+                      : 'border-white/15 bg-white/5 text-white rounded-bl-[1.75rem]'
                   }`}
                 >
                   <p className="whitespace-pre-wrap break-words font-mono">
@@ -466,18 +465,18 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
           </div>
         </main>
 
-        <footer className="fixed inset-x-0 bottom-0 border-t border-white/30 bg-black/80 px-4 py-3 backdrop-blur-xl shadow-[0_-8px_32px_rgba(31,38,135,0.37)] sm:px-5">
-          <form onSubmit={handleSubmitChat} className="flex items-center gap-2">
+        <footer className="fixed inset-x-0 bottom-0 border-t border-white/10 bg-black/70 px-4 py-4 backdrop-blur-2xl shadow-[0_-20px_60px_-30px_rgba(0,0,0,0.6)] sm:px-5">
+          <form onSubmit={handleSubmitChat} className="flex items-center gap-3">
             <input
               value={input}
               onChange={handleInputChange}
               placeholder="Escribe los detalles del presupuesto..."
-              className="flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-white outline-none transition focus:border-white/40 font-mono"
+              className="flex-1 rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm text-white placeholder:text-white/50 outline-none transition focus:border-white/30 focus:bg-white/15 font-mono"
             />
             <button
               type="submit"
               disabled={!input.trim()}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-black transition disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_16px_35px_-20px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/15 hover:border-white/25 disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="Enviar mensaje"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
@@ -487,7 +486,7 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
             <button
               type="button"
               onClick={handleToggleRecording}
-              className={`inline-flex h-11 w-11 items-center justify-center rounded-full transition ${isRecording ? 'bg-red-500 text-white' : 'bg-white text-black'} ${!speechSupported ? 'opacity-40 cursor-not-allowed' : ''}`}
+              className={`inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_16px_35px_-20px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/15 hover:border-white/25 ${isRecording ? 'ring-2 ring-cyan-400/60 text-cyan-100' : 'text-white'} ${!speechSupported ? 'opacity-40 cursor-not-allowed' : ''}`}
               disabled={!speechSupported}
               aria-label={speechSupported ? (isRecording ? 'Detener grabación de voz' : 'Grabar audio') : 'Reconocimiento de voz no disponible'}
             >
