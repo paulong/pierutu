@@ -79,9 +79,6 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
   const [speechSupported, setSpeechSupported] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const recognitionRef = useRef<any>(null);
-  const initialInputRef = useRef('');
-  const accumulatedTranscriptRef = useRef('');
-  const lastResultIndexRef = useRef(0);
 
   // Efecto para hidratar el estado desde localStorage después del primer render
   useEffect(() => {
@@ -146,23 +143,14 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'es-ES';
-    recognition.interimResults = true;
+    recognition.interimResults = false;
     recognition.continuous = true;
     recognition.maxAlternatives = 1;
 
     recognition.onresult = (event: any) => {
-      let newFinal = '';
-      for (let i = Math.max(event.resultIndex, lastResultIndexRef.current); i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          newFinal += event.results[i][0].transcript + ' ';
-        }
-      }
-      lastResultIndexRef.current = event.results.length;
-
-      if (newFinal.trim()) {
-        accumulatedTranscriptRef.current += newFinal;
-        const combinedText = accumulatedTranscriptRef.current.trim();
-        setInput(initialInputRef.current.trim() ? `${initialInputRef.current.trim()} ${combinedText}` : combinedText);
+      const transcript = event.results[0]?.[0]?.transcript?.trim();
+      if (transcript) {
+        setInput((prev) => `${prev} ${transcript}`.trim());
       }
     };
 
@@ -177,7 +165,6 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
 
     recognition.onstart = () => {
       setIsRecording(true);
-      lastResultIndexRef.current = 0;
     };
 
     recognitionRef.current = recognition;
@@ -195,8 +182,6 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
       return;
     }
 
-    initialInputRef.current = input;
-    accumulatedTranscriptRef.current = '';
     try {
       recognitionRef.current.start();
     } catch (error) {
@@ -465,13 +450,13 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
           </div>
         </main>
 
-        <footer className="fixed inset-x-0 bottom-0 border-t border-white/10 bg-transparent px-4 py-4 backdrop-blur-2xl shadow-[0_-24px_60px_-34px_rgba(0,0,0,0.45)] sm:px-5">
+        <footer className="fixed inset-x-0 bottom-0 border-t border-white/10 bg-transparent px-4 py-4 backdrop-blur-2xl shadow-[0_-24px_60px_-34px_rgba(255,255,255,0.08),0_-12px_40px_-18px_rgba(0,0,0,0.35)] sm:px-5">
           <form onSubmit={handleSubmitChat} className="flex items-center gap-3">
             <input
               value={input}
               onChange={handleInputChange}
               placeholder="Escribe los detalles del presupuesto..."
-              className="flex-1 rounded-full border border-white/20 bg-white/10 backdrop-blur-xl px-5 py-3 text-sm text-white placeholder:text-white/50 outline-none transition focus:border-white/30 focus:bg-white/15 font-mono"
+              className="flex-1 rounded-full border border-white/20 bg-white/10 backdrop-blur-3xl px-5 py-3 text-sm text-white placeholder:text-white/50 outline-none transition focus:border-white/30 focus:bg-white/15 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.18)] font-mono"
             />
             <button
               type="submit"
@@ -498,7 +483,12 @@ export default function AsistentePresupuestosClient({ pinCorrecto }: AsistentePr
               </svg>
             </button>
           </form>
-          
+          {isRecording && (
+            <div className="mt-3 flex items-center justify-center gap-2 text-sm text-white/90 font-semibold uppercase tracking-[0.2em]">
+              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />
+              <span>Grabando...</span>
+            </div>
+          )}
           <p className="mt-2 text-center text-[10px] uppercase tracking-[0.2em] text-white/40 font-mono">
             made by AOCO
           </p>
